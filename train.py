@@ -240,9 +240,10 @@ class HgnTrainer:
             # Save model
             self.hgn.save(self.model_save_file)
 
+
         self.test()
         return self.hgn
-    
+
     def compute_reconst_kld_errors(self, dataloader):
         """Computes reconstruction error and KL divergence.
 
@@ -255,7 +256,8 @@ class HgnTrainer:
         """
         first = True
         pbar = tqdm.tqdm(dataloader)
-        
+
+
         for _, rollout_batch in enumerate(pbar):
             # Move to device and change dtype
             rollout_batch = rollout_batch.to(self.device).type(self.dtype)
@@ -291,7 +293,8 @@ class HgnTrainer:
             return (err_mean, err_h), (kld_mean, kld_h)
         else:
             return (err_mean, err_h), None
-        
+
+
     def test(self):
         """Test after the training is finished and logs result to tensorboard.
         """

@@ -8,7 +8,7 @@ class ThreeSpring(Environment):
 
     WORLD_SIZE = 2.
 
-    def __init__(self, masses, elastic_cstes, damping_ratio=0., q=None, p=None):
+    def __init__(self, masses, elastic_cstes, spring_length=2., q=None, p=None):
         """Constructor for spring system
 
         Args:
@@ -19,6 +19,7 @@ class ThreeSpring(Environment):
         """
         self.masses = masses
         self.elastic_cstes = elastic_cstes
+        self.spring_length = spring_length
         super().__init__(q=q, p=p)
 
     def set(self, q, p):
@@ -65,7 +66,7 @@ class ThreeSpring(Environment):
             equations ([float]): Movement equations of the physical system
         """
         # dynamics of the three-spring-two-masses oscillator
-        return [states[1] / self.masses[0],  - self.elastic_cstes[0]*states[0] + self.elastic_cstes[1] * (states[2] - states[0]), states[3] / self.masses[1], - self.elastic_cstes[2] * states[2] - self.elastic_cstes[1] * (states[2] - states[0])]
+        return [states[2] / self.masses[0], states[3] / self.masses[1], - self.elastic_cstes[0]*(states[0] + self.spring_length / 2) + self.elastic_cstes[1] * (states[1] - states[0] - self.spring_length), - self.elastic_cstes[2] * (states[1] - self.spring_length / 2) - self.elastic_cstes[1] * (states[1] - states[0] - self.spring_length)]
 
     def _draw(self, res=32, color=True):
         """Returns array of the environment evolution
@@ -80,16 +81,14 @@ class ThreeSpring(Environment):
         q = self._rollout
         length = len(q[0])
         vid = np.zeros((length, res, res, 3), dtype='float')
-        ball_color_1 = self._default_ball_colors[0]
-        ball_color_2 = self._default_ball_colors[1]
+        ball_color = self._default_ball_colors
         space_res = 2.*self.get_world_size()/res
         for t in range(length):
-            vid[t] = cv2.circle(vid[t], self._world_to_pixels(0, q[0][t], res),
-                                int(self.masses[0]/space_res), ball_color_1, -1)
-            vid[t] = cv2.blur(cv2.blur(vid[t], (2, 2)), (2, 2))
+            vid[t] = cv2.circle(vid[t], self._world_to_pixels(q[0][t], 0, res),
+                                int(self.masses[0]/space_res), ball_color[0], -1)
 
-            vid[t] = cv2.circle(vid[t], self._world_to_pixels(0, q[2][t], res),
-                                int(self.masses[1]/space_res), ball_color_2, -1)
+            vid[t] = cv2.circle(vid[t], self._world_to_pixels(q[1][t], 0, res),
+                                int(self.masses[1]/space_res), ball_color[1], -1)
             vid[t] = cv2.blur(cv2.blur(vid[t], (2, 2)), (2, 2))
         vid += self._default_background_color
         vid[vid > 1.] = 1.
@@ -108,14 +107,18 @@ class ThreeSpring(Environment):
         radius_lb, radius_ub = radius_bound
         radius = np.random.rand()*(radius_ub - radius_lb) + radius_lb
         states = np.random.rand(4) * 2. - 1
-        states = (states / np.sqrt((states**2).sum())) * radius
-        self.set(np.array([states[0], states[2]]), np.array([states[1], states[3]]))
+        # states = (states / np.sqrt((states**2).sum())) * radius
+        states[0] = (-1 / 2 + (np.random.rand() * 2 - 1) / 3) * self.spring_length
+        states[1] = (1 / 2 + (np.random.rand() * 2 - 1) / 3) * self.spring_length
+        states[2] = np.sqrt(self.masses[0] / (self.elastic_cstes[0] + self.elastic_cstes[1])) / 10 * (2 * np.random.rand() - 1)
+        states[3] = np.sqrt(self.masses[1] / (self.elastic_cstes[2] + self.elastic_cstes[1])) / 10 * (2 * np.random.rand() - 1)
+        self.set(np.array([states[0], states[1]]), np.array([states[2], states[3]]))
 
 
 # Sample code for sampling rollouts
 if __name__ == "__main__":
 
-    sp = Spring(mass=.5, elastic_cst=2, damping_ratio=0.)
+    sp = ThreeSpring(masses=[.5, .3], elastic_cstes=[2, 3, 1], spring_length=2.)
     rolls = sp.sample_random_rollouts(number_of_frames=100,
                                       delta_time=0.1,
                                       number_of_rollouts=16,
