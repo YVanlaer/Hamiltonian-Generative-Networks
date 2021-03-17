@@ -1,3 +1,5 @@
+(This repo was cloned from https://github.com/CampusAI/Hamiltonian-Generative-Networks)
+
 # Hamiltonian-Generative-Networks
 Re-implementation of Hamiltonian Generative Networks [paper](https://arxiv.org/abs/1909.13789)
 
